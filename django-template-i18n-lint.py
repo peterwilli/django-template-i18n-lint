@@ -5,7 +5,6 @@ Prints out all
 
 import sys, re
 
-
 def location(str, pos):
     """Given a string str and an integer pos, find the line number and character in that line that correspond to pos"""
     lineno, charpos = 1, 1
@@ -101,14 +100,23 @@ def non_translated_text(filename):
             # Ignore it if it doesn't have letters
             if LETTERS.search(match):
                 lineno, charpos = location(template, offset)
-                yield (lineno, charpos, match.strip().replace("\n", "").replace("\r", "")[:120])
+                yield (lineno, charpos, match.replace("\n", "").replace("\r", "")[:120])
             
 
         offset += len(match)
 
-
 if __name__ == '__main__':
     filename = sys.argv[1]
+    full_text_lines = open(filename, 'r').readlines()
     for lineno, charpos, message in non_translated_text(filename):
-        print "%s:%s:%s:%s" % (filename, lineno, charpos, message)
-
+        change = raw_input("Make '%s' translatable? [y/n] " % message)
+        if change == 'y':
+			real_lineno = lineno - 1
+			left_part = full_text_lines[real_lineno][0 : charpos - 1]
+			right_part = full_text_lines[real_lineno][charpos + len(message) - 1:]
+			full_text_lines[lineno - 1] = left_part + ('{%% trans "%s" %%}' % message) + right_part
+			
+    full_text = "".join(full_text_lines)
+    save_filename = filename.split(".")[0] + "_translated.html"
+    open(save_filename, 'w').write(full_text)
+    print "Fully translated! Saved as: %s" % save_filename
